@@ -1,6 +1,7 @@
 import type { CodeWikiAdapter, AdapterType } from './types.js';
 import { JavaAdapter } from './languages/java.js';
 import { TypeScriptAdapter } from './languages/typescript.js';
+import { GoAdapter } from './languages/go.js';
 import { KafkaAdapter } from './communication/kafka.js';
 
 export class AdapterRegistry {
@@ -33,6 +34,7 @@ export class AdapterRegistry {
     const registry = new AdapterRegistry();
     registry.register(new JavaAdapter());
     registry.register(new TypeScriptAdapter());
+    registry.register(new GoAdapter());
     registry.register(new KafkaAdapter());
     return registry;
   }

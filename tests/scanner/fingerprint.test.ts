@@ -62,4 +62,17 @@ describe('fingerprint (batch)', () => {
     expect(names).toContain('ts-service');
     expect(names).toContain('kafka-producer');
   });
+
+  it('treats a single-repo path as one repo', async () => {
+    const registry = AdapterRegistry.withBuiltins();
+    const results = await fingerprint(
+      path.join(FIXTURES, 'java-service'),
+      registry
+    );
+    expect(results).toHaveLength(1);
+    expect(path.basename(results[0].repo_path)).toBe('java-service');
+    expect(results[0].tech_stack.languages).toContainEqual(
+      expect.objectContaining({ language: 'java' })
+    );
+  });
 });
