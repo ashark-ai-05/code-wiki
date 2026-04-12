@@ -1,5 +1,4 @@
 import type { McpTool } from './index.js';
-import { ALL_TOOLS } from './index.js';
 import { buildResponse } from '../response.js';
 
 const FEDERATION_NOTE =
@@ -40,4 +39,3 @@ export const getWorkflowTool: McpTool = {
     }),
 };
 
-ALL_TOOLS.push(listWorkflowsTool, getWorkflowTool);

@@ -21,4 +21,42 @@ export interface McpTool {
   ) => Promise<ToolResponse>;
 }
 
-export const ALL_TOOLS: McpTool[] = [];
+import {
+  listServicesTool,
+  getServiceTool,
+  findByTechTool,
+  traceDownstreamTool,
+  traceUpstreamTool,
+  getEdgesTool,
+} from './graph.js';
+import {
+  listWorkflowsTool,
+  getWorkflowTool,
+} from './workflows.js';
+import {
+  listFilesTool,
+  readFileTool,
+  searchFilesTool,
+} from './code.js';
+import {
+  statsTool,
+  refreshTool,
+  healthTool,
+} from './meta.js';
+
+export const ALL_TOOLS: McpTool[] = [
+  listServicesTool,
+  getServiceTool,
+  findByTechTool,
+  traceDownstreamTool,
+  traceUpstreamTool,
+  getEdgesTool,
+  listWorkflowsTool,
+  getWorkflowTool,
+  listFilesTool,
+  readFileTool,
+  searchFilesTool,
+  statsTool,
+  refreshTool,
+  healthTool,
+];

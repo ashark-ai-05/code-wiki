@@ -1,5 +1,4 @@
 import type { McpTool } from './index.js';
-import { ALL_TOOLS } from './index.js';
 import { buildResponse } from '../response.js';
 
 export const listServicesTool: McpTool = {
@@ -244,11 +243,3 @@ function traverse(
   return [...visited];
 }
 
-ALL_TOOLS.push(
-  listServicesTool,
-  getServiceTool,
-  findByTechTool,
-  traceDownstreamTool,
-  traceUpstreamTool,
-  getEdgesTool
-);

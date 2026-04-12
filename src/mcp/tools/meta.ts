@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 import type { McpTool } from './index.js';
-import { ALL_TOOLS } from './index.js';
 import { buildResponse } from '../response.js';
 
 export const statsTool: McpTool = {
@@ -70,4 +69,3 @@ export const healthTool: McpTool = {
   },
 };
 
-ALL_TOOLS.push(statsTool, refreshTool, healthTool);

@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import glob from 'fast-glob';
 import type { McpTool } from './index.js';
-import { ALL_TOOLS } from './index.js';
 import { buildResponse } from '../response.js';
 
 const MAX_BYTES_PER_READ = 512 * 1024;
@@ -200,4 +199,3 @@ export const searchFilesTool: McpTool = {
   },
 };
 
-ALL_TOOLS.push(listFilesTool, readFileTool, searchFilesTool);

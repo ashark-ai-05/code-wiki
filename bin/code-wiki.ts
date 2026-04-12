@@ -6,6 +6,7 @@ import { buildGraph } from '../src/graph/builder.js';
 import { writeGraph } from '../src/graph/writer.js';
 import { generateWiki } from '../src/wiki/generator.js';
 import { loadConfig } from '../src/config/loader.js';
+import { runMcpServer } from '../src/mcp/server.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -123,6 +124,21 @@ program
       console.log(`  Wiki: ${outputDir}/index.md`);
     }
   );
+
+program
+  .command('mcp')
+  .description('Run as an MCP server over stdio')
+  .action(async () => {
+    try {
+      await runMcpServer({
+        cwd: process.cwd(),
+        env: process.env,
+      });
+    } catch (err) {
+      console.error('[code-wiki mcp]', (err as Error).message);
+      process.exit(1);
+    }
+  });
 
 function resolveRepoDir(options: {
   path?: string;
