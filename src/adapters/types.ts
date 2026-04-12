@@ -1,3 +1,5 @@
+import type { Exposure, SourceEvidence } from '../fingerprint/types.js';
+
 export interface DetectionResult {
   detected: boolean;
   details: Record<string, unknown>;
@@ -33,7 +35,11 @@ export interface CodeWikiAdapter {
   type: AdapterType;
   filePatterns: string[];
   detect(repoPath: string): Promise<DetectionResult>;
-  findConnections?(repoPath: string, context: ConnectionContext): Promise<EdgeCandidate[]>;
+  findExposures?(repoPath: string): Promise<Exposure[]>;
+  findConnections?(
+    repoPath: string,
+    context: ConnectionContext
+  ): Promise<EdgeCandidate[]>;
   healthCheck?(): Promise<{ healthy: boolean; message: string }>;
 }
 
@@ -66,3 +72,5 @@ export interface EdgeCandidate {
   evidence: { from_file: string; from_line?: number; to_file?: string; to_line?: number };
   confidence: 'static' | 'inferred';
 }
+
+export type { Exposure, SourceEvidence };
