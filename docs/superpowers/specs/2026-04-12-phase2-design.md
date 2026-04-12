@@ -238,8 +238,8 @@ All tools return a consistent envelope:
 | `list_services(filter?)` | All services, optional filter by language/framework |
 | `get_service(id)` | Full service object: tech stack, exposes, consumes, paths |
 | `find_by_tech(category, value)` | "All Spring Boot services" / "All repos using Kafka" |
-| `trace_downstream(service_id, depth?)` | Follow outgoing edges N levels |
-| `trace_upstream(service_id, depth?)` | Follow incoming edges N levels |
+| `trace_downstream(service_id, depth?, edge_types?)` | Follow outgoing edges N levels, optionally filtered by edge type (e.g. `["kafka"]`) |
+| `trace_upstream(service_id, depth?, edge_types?)` | Follow incoming edges N levels, optionally filtered by edge type |
 | `get_edges(filter?)` | All edges matching type/from/to |
 | `list_workflows()` | Declared + auto-discovered workflows |
 | `get_workflow(name)` | Services + edges + subgraph for one workflow |
@@ -258,9 +258,11 @@ If a service's local path is absent, these tools return a clear error message te
 
 | Tool | Purpose |
 |------|---------|
-| `stats()` | Service/edge counts, last scan time, graph source |
+| `stats()` | Service/edge counts, last scan time, graph source, `graph_freshness_seconds` (age since last merge) |
 | `refresh()` | Re-pull federation repo + reload graph |
-| `health()` | Schema version, missing paths, stale fingerprints |
+| `health()` | Schema version, missing paths, stale fingerprints, `graph_freshness_seconds` |
+
+The same binary and the same tools serve both modes — single-repo local graph and pulled federation graph — with no mode flag. Agents do not need to know which mode they are talking to.
 
 ### Explicitly not included
 
@@ -318,15 +320,22 @@ Example (auto-generated from `code-wiki.yaml`'s `order-placement` workflow):
 ---
 name: order-placement
 description: Use when working on order placement, order routing, or order
-  validation. Spans order-gateway (Java 17 / Spring Boot), order-router
-  (Go 1.22 / chi), and price-check (Python 3.12 / FastAPI). Kafka topic
-  orders.new flows producer → router → validator. Trigger on questions about
-  order flow, order validation, price lookups, or any of the listed services.
+  validation — the end-to-end flow that accepts a new order, validates it
+  against risk limits, looks up pricing, and publishes a confirmed order.
+  Spans order-gateway (Java 17 / Spring Boot), order-router (Go 1.22 / chi),
+  and price-check (Python 3.12 / FastAPI). Kafka topic orders.new flows
+  producer → router → validator. Trigger on questions about order flow, order
+  validation, price lookups, or any of the listed services.
 generated_by: code-wiki
 generated_at: 2026-04-12T10:00:00Z
 ---
 
 # Order Placement Workflow
+
+## When to use this skill
+Activate this skill when the user is investigating, extending, or debugging
+any service in the order-placement chain, or when the question involves the
+business flow of a new order from API to confirmation.
 
 ## Services involved
 - **order-gateway** — entry point, REST `POST /orders`
@@ -391,7 +400,7 @@ Every command is a thin orchestrator over the engine.
 | `code-wiki publish` | Pushes fingerprint to federation repo | Repo or CI |
 | `code-wiki pull` | Clones/updates federation repo to `~/.code-wiki/org/` | Dev laptop |
 | `code-wiki merge` | Rebuilds org graph + org wiki from all fingerprints | Federation repo CI only |
-| `code-wiki narrate` | Runs LLM narration pass (opt-in) | Repo or CI |
+| `code-wiki narrate [--all \| --workflow <name> \| --page <path>]` | Runs LLM narration pass (opt-in). Granular flags let users narrate one workflow or page without re-running `build`. | Repo or CI |
 | `code-wiki mcp` | Starts MCP server over stdio | Spawned by agent |
 | `code-wiki status` | Shows graph source, freshness, stale/missing fingerprints | Anywhere |
 
@@ -434,6 +443,9 @@ mcp:
   transport: stdio                    # only option in Phase 2
   tools: all                          # all | [list of tool names]
   repo_paths:                         # optional — for code-level tools in org mode
+    # Auto-populated by `code-wiki build` when it detects common workspace
+    # layouts (e.g., sibling clones under ~/src). Hand-edits always win over
+    # auto-detection.
     credit-gateway: ~/src/credit-gateway
     risk-calc:      ~/src/risk-calc
 ```
@@ -534,7 +546,12 @@ Phase 2 ships in six slices. Each produces a usable increment.
 
 Intentionally deferred to the writing-plans skill. Not blockers for design approval.
 
-1. Exact identifier normalization rules (what does "lowercase + trim + strip version suffixes" mean precisely for Kafka topics vs REST paths vs gRPC services?).
+1. Exact identifier normalization rules. Starting defaults (to be refined during 2d):
+   - All identifiers: lowercase + trim.
+   - Kafka topics: strip common environment prefixes (`dev.`, `prod.`, `stg.`) and version suffixes (`.v1`, `.v2`). Configurable via `analysis.normalize.kafka.strip_prefixes` / `strip_suffixes`.
+   - REST paths: strip trailing slashes; normalize path parameters (`/users/{id}` and `/users/:id` collapse to `/users/:param`).
+   - gRPC services: already canonical (`package.Service/Method`); no-op.
+   - Document the full ruleset in `docs/normalization.md` alongside examples so users can reason about why an edge did or did not form.
 2. REST endpoint detection strategy for each framework (Spring `@RequestMapping`, Go chi `r.Get`, Express `app.get`, FastAPI decorators). Start with Spring + chi + Express; widen as needed.
 3. Merge job performance budget at 100 vs 500 vs 1000 fingerprints.
 4. `code-wiki init` wizard flow — how much to prompt for vs infer from the repo.
