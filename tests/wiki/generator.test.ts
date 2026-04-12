@@ -157,6 +157,20 @@ describe('generateWiki', () => {
     expect(content).toMatch(/Kafka Topics/);
   });
 
+  it('creates glossary.md listing every identifier the service touches', () => {
+    generateWiki(testGraph, tmpDir);
+    const glossaryPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'glossary.md'
+    );
+    expect(existsSync(glossaryPath)).toBe(true);
+    const content = readFileSync(glossaryPath, 'utf-8');
+    expect(content).toContain('# credit-gateway — Glossary');
+    expect(content).toContain('generated_by: code-wiki');
+    // credit-gateway exposes credit.check.requests, consumes credit.check.responses
+    expect(content).toContain('credit.check.requests');
+    expect(content).toContain('credit.check.responses');
+  });
+
   it('includes frontmatter in generated pages', () => {
     generateWiki(testGraph, tmpDir);
     const content = readFileSync(

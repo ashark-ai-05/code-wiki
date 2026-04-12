@@ -185,6 +185,58 @@ function prettyTypeName(type: string): string {
   return type;
 }
 
+export function serviceGlossary(service: ServiceNode): string {
+  const fm = frontmatter({
+    generated_by: 'code-wiki',
+    generated_at: new Date().toISOString(),
+    source_repos: [service.id],
+  });
+
+  let md = `${fm}# ${service.id} — Glossary\n\n`;
+  md +=
+    '> Every identifier this service exposes or consumes, with direction.\n\n';
+
+  const all = [
+    ...service.exposes.map((e) => ({ ex: e, direction: 'exposes' as const })),
+    ...service.consumes.map((e) => ({ ex: e, direction: 'consumes' as const })),
+  ];
+
+  if (all.length === 0) {
+    md += 'No identifiers detected for this service.\n';
+    return md;
+  }
+
+  const seen = new Set<string>();
+  const unique = all.filter(({ ex, direction }) => {
+    const key = `${direction}::${ex.type}::${ex.identifier}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const exposes = unique.filter((u) => u.direction === 'exposes');
+  const consumes = unique.filter((u) => u.direction === 'consumes');
+
+  const section = (title: string, rows: typeof unique): string => {
+    if (rows.length === 0) return '';
+    let out = `## ${title} (${rows.length})\n\n`;
+    out += '| Identifier | Type | Source |\n';
+    out += '|------------|------|--------|\n';
+    for (const { ex } of rows) {
+      const src = ex.source.line
+        ? `${ex.source.path}:${ex.source.line}`
+        : ex.source.path;
+      out += `| \`${ex.identifier}\` | ${ex.type} | ${src} |\n`;
+    }
+    out += '\n';
+    return out;
+  };
+
+  md += section('Exposes', exposes);
+  md += section('Consumes', consumes);
+  return md;
+}
+
 export function wikiIndex(
   services: ServiceNode[],
   edges: Edge[]
