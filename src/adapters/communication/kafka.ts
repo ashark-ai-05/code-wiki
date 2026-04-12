@@ -35,11 +35,11 @@ export class KafkaAdapter implements CodeWikiAdapter {
 
     for (const configFile of springConfigs) {
       const found = this.parseSpringKafkaConfig(configFile);
-      if (found.topics.length > 0) {
+      if (found.hasProducer) hasProducer = true;
+      if (found.hasConsumer) hasConsumer = true;
+      if (found.topics.length > 0 || found.hasProducer || found.hasConsumer) {
         topics.push(...found.topics);
         configFiles.push(path.relative(repoPath, configFile));
-        if (found.hasProducer) hasProducer = true;
-        if (found.hasConsumer) hasConsumer = true;
       }
     }
 
