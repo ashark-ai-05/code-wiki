@@ -1,6 +1,26 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-*.js
-!vitest.config.ts
+*.tsbuildinfo
+
+# Local scan output
 code-wiki-output/
+docs/wiki/graph/
+docs/wiki/services/
+
+# Memory / session state from tooling
+.remember/
+
+# OS junk
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Logs / temp
+*.log
+.tmp/

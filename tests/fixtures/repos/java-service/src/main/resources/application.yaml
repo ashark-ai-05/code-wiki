@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: credit-gateway
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+  datasource:
+    url: jdbc:oracle:thin:@oracle-host:1521/creditdb
+    driver-class-name: oracle.jdbc.OracleDriver
+
+server:
+  port: 8080
