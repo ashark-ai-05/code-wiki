@@ -59,8 +59,9 @@ describe('AdapterRegistry', () => {
   it('loads built-in adapters', () => {
     const registry = AdapterRegistry.withBuiltins();
     const languages = registry.getByType('language');
-    expect(languages.length).toBeGreaterThanOrEqual(2);
+    expect(languages.length).toBeGreaterThanOrEqual(3); // java, typescript, go
     const comms = registry.getByType('communication');
-    expect(comms.length).toBeGreaterThanOrEqual(1);
+    expect(comms.length).toBeGreaterThanOrEqual(2);     // kafka, rest
+    expect(registry.getByName('rest')).toBeDefined();
   });
 });

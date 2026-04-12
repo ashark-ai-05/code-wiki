@@ -3,6 +3,7 @@ import { JavaAdapter } from './languages/java.js';
 import { TypeScriptAdapter } from './languages/typescript.js';
 import { GoAdapter } from './languages/go.js';
 import { KafkaAdapter } from './communication/kafka.js';
+import { RestAdapter } from './communication/rest.js';
 
 export class AdapterRegistry {
   private adapters: Map<string, CodeWikiAdapter> = new Map();
@@ -36,6 +37,7 @@ export class AdapterRegistry {
     registry.register(new TypeScriptAdapter());
     registry.register(new GoAdapter());
     registry.register(new KafkaAdapter());
+    registry.register(new RestAdapter());
     return registry;
   }
 }
