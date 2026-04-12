@@ -55,4 +55,12 @@ describe('AdapterRegistry', () => {
       registry.register(createMockAdapter('java', 'language'));
     }).toThrow('already registered');
   });
+
+  it('loads built-in adapters', () => {
+    const registry = AdapterRegistry.withBuiltins();
+    const languages = registry.getByType('language');
+    expect(languages.length).toBeGreaterThanOrEqual(2);
+    const comms = registry.getByType('communication');
+    expect(comms.length).toBeGreaterThanOrEqual(1);
+  });
 });
