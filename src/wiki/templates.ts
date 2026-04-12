@@ -267,6 +267,22 @@ export function serviceRunbook(service: ServiceNode): string {
   return md;
 }
 
+export function serviceWorkflows(service: ServiceNode): string {
+  const fm = frontmatter({
+    generated_by: 'code-wiki',
+    generated_at: new Date().toISOString(),
+    source_repos: [service.id],
+  });
+
+  let md = `${fm}# ${service.id} — Workflows\n\n`;
+  md +=
+    '> Named workflows this service participates in. Cross-repo workflows require federation to be enabled.\n\n';
+  md +=
+    'No workflows declared locally and federation not enabled. ' +
+    'Declare workflows in `code-wiki.yaml` or enable federation to see cross-repo flows.\n';
+  return md;
+}
+
 export function wikiIndex(
   services: ServiceNode[],
   edges: Edge[]

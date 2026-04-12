@@ -9,6 +9,7 @@ import {
   serviceApi,
   serviceGlossary,
   serviceRunbook,
+  serviceWorkflows,
 } from './templates.js';
 
 export function generateWiki(
@@ -61,5 +62,11 @@ export function generateWiki(
     if (!existsSync(runbookPath)) {
       writeFileSync(runbookPath, serviceRunbook(service), 'utf-8');
     }
+
+    writeFileSync(
+      path.join(serviceDir, 'workflows.md'),
+      serviceWorkflows(service),
+      'utf-8'
+    );
   }
 }

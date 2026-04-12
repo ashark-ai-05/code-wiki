@@ -200,6 +200,20 @@ describe('generateWiki', () => {
     expect(readFileSync(runbookPath, 'utf-8')).toBe(customContent);
   });
 
+  it('creates workflows.md (placeholder when no workflows declared)', () => {
+    generateWiki(testGraph, tmpDir);
+    const workflowsPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'workflows.md'
+    );
+    expect(existsSync(workflowsPath)).toBe(true);
+    const content = readFileSync(workflowsPath, 'utf-8');
+    expect(content).toContain('# credit-gateway — Workflows');
+    expect(content).toContain('generated_by: code-wiki');
+    expect(content.toLowerCase()).toMatch(
+      /no workflows|federation not enabled/
+    );
+  });
+
   it('includes frontmatter in generated pages', () => {
     generateWiki(testGraph, tmpDir);
     const content = readFileSync(
