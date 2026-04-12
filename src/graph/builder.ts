@@ -1,11 +1,11 @@
-import type { RepoFingerprint } from '../scanner/types.js';
+import type { RepoFingerprint, Exposure } from '../fingerprint/types.js';
+import { normalizeIdentifier } from '../fingerprint/normalize.js';
 import type { Graph, ServiceNode, Edge } from './types.js';
 
 export function buildGraph(fingerprints: RepoFingerprint[]): Graph {
   const services = fingerprints.map(toServiceNode);
   const edges = buildEdges(fingerprints);
-
-  return { schema_version: '1.0', services, edges };
+  return { schema_version: '2.0', services, edges };
 }
 
 function toServiceNode(fp: RepoFingerprint): ServiceNode {
@@ -20,8 +20,7 @@ function toServiceNode(fp: RepoFingerprint): ServiceNode {
     if (lang.build_tool) buildTools.push(lang.build_tool);
     for (const dep of lang.dependencies ?? []) {
       if (dep.scope === 'test' || dep.scope === 'dev') continue;
-      if (dep.name.includes('spring-boot'))
-        frameworks.push('spring-boot');
+      if (dep.name.includes('spring-boot')) frameworks.push('spring-boot');
       if (dep.name === 'express') frameworks.push('express');
       if (dep.name === 'fastify') frameworks.push('fastify');
       if (dep.name === 'react') frameworks.push('react');
@@ -29,22 +28,9 @@ function toServiceNode(fp: RepoFingerprint): ServiceNode {
     }
   }
 
-  const exposes: string[] = [];
-  const consumes: string[] = [];
-
-  for (const comm of fp.communication) {
-    const label = `${comm.type}-${comm.role}`;
-    if (['producer', 'server', 'both'].includes(comm.role)) {
-      exposes.push(label);
-    }
-    if (['consumer', 'client', 'both'].includes(comm.role)) {
-      consumes.push(label);
-    }
-  }
-
   return {
-    id: fp.repo_name,
-    repo: fp.repo_path,
+    id: fp.repo.name,
+    repo: fp.repo.path,
     type: 'microservice',
     tech_stack: {
       languages: [...new Set(languages)],
@@ -53,52 +39,66 @@ function toServiceNode(fp: RepoFingerprint): ServiceNode {
       runtime: [],
       databases: [],
     },
-    exposes: [...new Set(exposes)],
-    consumes: [...new Set(consumes)],
+    exposes: fp.exposes,
+    consumes: fp.consumes,
     last_scanned: fp.scanned_at,
+    scan_sha: fp.repo.sha,
   };
+}
+
+interface Endpoint {
+  service: string;
+  exposure: Exposure;
 }
 
 function buildEdges(fingerprints: RepoFingerprint[]): Edge[] {
   const edges: Edge[] = [];
   let edgeId = 0;
 
-  const topicProducers = new Map<string, string[]>();
-  const topicConsumers = new Map<string, string[]>();
+  const producers = new Map<string, Endpoint[]>();
+  const consumers = new Map<string, Endpoint[]>();
 
   for (const fp of fingerprints) {
-    for (const comm of fp.communication) {
-      if (comm.type !== 'kafka') continue;
-      for (const topic of comm.identifiers) {
-        if (['producer', 'both'].includes(comm.role)) {
-          const list = topicProducers.get(topic) ?? [];
-          list.push(fp.repo_name);
-          topicProducers.set(topic, list);
-        }
-        if (['consumer', 'both'].includes(comm.role)) {
-          const list = topicConsumers.get(topic) ?? [];
-          list.push(fp.repo_name);
-          topicConsumers.set(topic, list);
-        }
-      }
+    for (const ex of fp.exposes) {
+      if (ex.identifier === '<unknown>') continue;
+      const key = edgeKey(ex);
+      const list = producers.get(key) ?? [];
+      list.push({ service: fp.repo.name, exposure: ex });
+      producers.set(key, list);
+    }
+    for (const ex of fp.consumes) {
+      if (ex.identifier === '<unknown>') continue;
+      const key = edgeKey(ex);
+      const list = consumers.get(key) ?? [];
+      list.push({ service: fp.repo.name, exposure: ex });
+      consumers.set(key, list);
     }
   }
 
-  for (const [topic, producers] of topicProducers) {
-    const consumers = topicConsumers.get(topic) ?? [];
-    for (const producer of producers) {
-      for (const consumer of consumers) {
-        if (producer === consumer) continue;
+  for (const [key, prodList] of producers.entries()) {
+    const consList = consumers.get(key) ?? [];
+    for (const producer of prodList) {
+      for (const consumer of consList) {
+        if (producer.service === consumer.service) continue;
         edgeId++;
         edges.push({
           id: `e${String(edgeId).padStart(3, '0')}`,
-          from: producer,
-          to: consumer,
-          type: 'kafka',
+          from: producer.service,
+          to: consumer.service,
+          type: edgeType(producer.exposure.type),
           bidirectional: false,
-          details: { topic },
-          evidence: {},
-          confidence: 'static',
+          details: detailsFor(producer.exposure),
+          evidence: {
+            from_file: producer.exposure.source.path,
+            from_line: producer.exposure.source.line,
+            to_file: consumer.exposure.source.path,
+            to_line: consumer.exposure.source.line,
+          },
+          confidence:
+            producer.exposure.confidence === 'static' &&
+            consumer.exposure.confidence === 'static'
+              ? 'static'
+              : 'inferred',
           discovered_at: new Date().toISOString(),
           workflows: [],
         });
@@ -107,4 +107,21 @@ function buildEdges(fingerprints: RepoFingerprint[]): Edge[] {
   }
 
   return edges;
+}
+
+function edgeKey(ex: Exposure): string {
+  return `${ex.type}::${normalizeIdentifier(ex.type, ex.identifier)}`;
+}
+
+function edgeType(exposureType: Exposure['type']): string {
+  if (exposureType === 'kafka-topic') return 'kafka';
+  if (exposureType === 'rest-endpoint') return 'rest';
+  if (exposureType === 'grpc-service') return 'grpc';
+  return exposureType;
+}
+
+function detailsFor(ex: Exposure): Record<string, unknown> {
+  if (ex.type === 'kafka-topic') return { topic: ex.identifier };
+  if (ex.type === 'rest-endpoint') return { endpoint: ex.identifier };
+  return { identifier: ex.identifier };
 }

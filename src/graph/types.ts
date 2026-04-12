@@ -1,3 +1,5 @@
+import type { Exposure } from '../fingerprint/types.js';
+
 export interface ServiceNode {
   id: string;
   repo: string;
@@ -9,8 +11,8 @@ export interface ServiceNode {
     runtime: string[];
     databases: string[];
   };
-  exposes: string[];
-  consumes: string[];
+  exposes: Exposure[];
+  consumes: Exposure[];
   last_scanned: string;
   scan_sha?: string;
 }
