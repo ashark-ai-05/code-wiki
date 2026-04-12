@@ -6,6 +6,7 @@ import {
   serviceOverview,
   serviceTechStack,
   serviceDependencies,
+  serviceApi,
 } from './templates.js';
 
 export function generateWiki(
@@ -39,6 +40,12 @@ export function generateWiki(
     writeFileSync(
       path.join(serviceDir, 'dependencies.md'),
       serviceDependencies(service, graph.edges),
+      'utf-8'
+    );
+
+    writeFileSync(
+      path.join(serviceDir, 'api.md'),
+      serviceApi(service),
       'utf-8'
     );
   }

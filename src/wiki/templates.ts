@@ -138,6 +138,53 @@ export function serviceDependencies(
   return md;
 }
 
+export function serviceApi(service: ServiceNode): string {
+  const fm = frontmatter({
+    generated_by: 'code-wiki',
+    generated_at: new Date().toISOString(),
+    source_repos: [service.id],
+  });
+
+  let md = `${fm}# ${service.id} — API\n\n`;
+  md +=
+    '> Auto-generated from static analysis. Lists endpoints and topics this service exposes.\n\n';
+
+  const byType = new Map<string, typeof service.exposes>();
+  for (const ex of service.exposes) {
+    const list = byType.get(ex.type) ?? [];
+    list.push(ex);
+    byType.set(ex.type, list);
+  }
+
+  if (byType.size === 0) {
+    md += 'No exposed endpoints or topics detected.\n';
+    return md;
+  }
+
+  for (const [type, entries] of byType) {
+    md += `## ${prettyTypeName(type)} (${entries.length})\n\n`;
+    md += '| Identifier | Role | Source | Confidence |\n';
+    md += '|------------|------|--------|------------|\n';
+    for (const ex of entries) {
+      const src = ex.source.line
+        ? `${ex.source.path}:${ex.source.line}`
+        : ex.source.path;
+      md += `| \`${ex.identifier}\` | ${ex.role} | ${src} | ${ex.confidence} |\n`;
+    }
+    md += '\n';
+  }
+
+  return md;
+}
+
+function prettyTypeName(type: string): string {
+  if (type === 'kafka-topic') return 'Kafka Topics';
+  if (type === 'rest-endpoint') return 'REST Endpoints';
+  if (type === 'grpc-service') return 'gRPC Services';
+  if (type === 'db-schema') return 'Database Schemas';
+  return type;
+}
+
 export function wikiIndex(
   services: ServiceNode[],
   edges: Edge[]

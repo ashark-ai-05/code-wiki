@@ -37,8 +37,26 @@ describe('generateWiki', () => {
           runtime: [],
           databases: [],
         },
-        exposes: ['kafka-producer'],
-        consumes: ['kafka-consumer'],
+        exposes: [
+          {
+            type: 'kafka-topic' as const,
+            identifier: 'credit.check.requests',
+            role: 'producer' as const,
+            source: { path: 'app.yaml', line: 5 },
+            detection_method: 'static' as const,
+            confidence: 'static' as const,
+          },
+        ],
+        consumes: [
+          {
+            type: 'kafka-topic' as const,
+            identifier: 'credit.check.responses',
+            role: 'consumer' as const,
+            source: { path: 'app.yaml', line: 7 },
+            detection_method: 'static' as const,
+            confidence: 'static' as const,
+          },
+        ],
         last_scanned: '2026-04-12T10:00:00Z',
       },
       {
@@ -53,7 +71,16 @@ describe('generateWiki', () => {
           databases: [],
         },
         exposes: [],
-        consumes: ['kafka-consumer'],
+        consumes: [
+          {
+            type: 'kafka-topic' as const,
+            identifier: 'credit.check.requests',
+            role: 'consumer' as const,
+            source: { path: 'app.yaml', line: 3 },
+            detection_method: 'static' as const,
+            confidence: 'static' as const,
+          },
+        ],
         last_scanned: '2026-04-12T10:00:00Z',
       },
     ],
@@ -114,6 +141,20 @@ describe('generateWiki', () => {
     const content = readFileSync(depsPath, 'utf-8');
     expect(content).toContain('risk-calc');
     expect(content).toContain('credit.check.requests');
+  });
+
+  it('creates api.md listing exposed endpoints/topics', () => {
+    generateWiki(testGraph, tmpDir);
+    const apiPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'api.md'
+    );
+    expect(existsSync(apiPath)).toBe(true);
+    const content = readFileSync(apiPath, 'utf-8');
+    expect(content).toContain('generated_by: code-wiki');
+    expect(content).toContain('# credit-gateway — API');
+    // credit-gateway exposes credit.check.requests (kafka-topic)
+    expect(content).toContain('credit.check.requests');
+    expect(content).toMatch(/Kafka Topics/);
   });
 
   it('includes frontmatter in generated pages', () => {
