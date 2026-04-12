@@ -1,4 +1,5 @@
 import type { ServiceNode, Edge } from '../graph/types.js';
+import { emptyNarrationBlock } from './narration.js';
 
 export function frontmatter(
   fields: Record<string, unknown>
@@ -40,7 +41,8 @@ export function serviceOverview(
 
   let md = `${fm}# ${service.id}\n\n`;
   md +=
-    '> Auto-generated from structural analysis. Run `code-wiki build` with LLM to generate detailed prose.\n\n';
+    '> Auto-generated from structural analysis. Run `code-wiki narrate` to add prose.\n\n';
+  md += `${emptyNarrationBlock(`services/${service.id}/overview.md`)}\n\n`;
   md += '## Tech Stack\n\n';
   md += `- **Languages:** ${service.tech_stack.languages.join(', ') || 'unknown'}\n`;
   md += `- **Frameworks:** ${service.tech_stack.frameworks.join(', ') || 'none detected'}\n`;

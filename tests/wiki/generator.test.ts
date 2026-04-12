@@ -214,6 +214,19 @@ describe('generateWiki', () => {
     );
   });
 
+  it('overview.md includes empty narration markers', () => {
+    generateWiki(testGraph, tmpDir);
+    const overviewPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'overview.md'
+    );
+    const content = readFileSync(overviewPath, 'utf-8');
+    expect(content).toContain('<!-- narrated:start');
+    expect(content).toContain('<!-- narrated:end -->');
+    expect(content).toContain('narrated_at=""');
+    // Structural content still present
+    expect(content).toContain('## Tech Stack');
+  });
+
   it('includes frontmatter in generated pages', () => {
     generateWiki(testGraph, tmpDir);
     const content = readFileSync(
