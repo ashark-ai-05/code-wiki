@@ -1,0 +1,29 @@
+{
+  "name": "code-wiki",
+  "version": "0.1.0",
+  "description": "Self-maintaining codebase intelligence platform",
+  "type": "module",
+  "bin": {
+    "code-wiki": "dist/bin/code-wiki.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx bin/code-wiki.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "fast-glob": "^3.3.3",
+    "typescript": "^6.0.2",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "vitest": "^4.1.4"
+  }
+}
