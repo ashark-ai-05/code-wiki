@@ -1,0 +1,43 @@
+version: "1.0"
+
+sources:
+  - provider: local
+    paths:
+      - ./services/svc-a
+      - ./services/svc-b
+
+workflows:
+  test-workflow:
+    description: Test workflow for the code-wiki project
+    entry_points:
+      - svc-a
+    auto_discover: true
+    auto_add_discovered_services: false
+    tags:
+      - backend
+      - api
+
+output:
+  wiki_path: ./wiki-output
+  git_enabled: true
+  index_mode: json
+  diagram_format: mermaid
+  render_diagrams: true
+  markdown_style: github
+
+llm:
+  provider: openai
+  model: gpt-4o
+  api_key_env: OPENAI_API_KEY
+
+analysis:
+  scan:
+    shallow_all_repos: true
+    deep_workflows_only: true
+    tree_sitter_parsing: false
+    max_concurrency: 4
+  detection:
+    kafka: true
+    rest_api: true
+    grpc: false
+    database: true

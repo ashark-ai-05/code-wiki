@@ -1,0 +1,13 @@
+sources:
+  - provider: local
+    paths:
+      - ./services
+
+workflows:
+  my-workflow:
+    description: Workflow without version
+    entry_points:
+      - svc-a
+
+output:
+  wiki_path: ./wiki-output

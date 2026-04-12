@@ -1,0 +1,15 @@
+version: "1.0"
+
+sources:
+  - provider: local
+    paths:
+      - ./services
+
+workflows:
+  my-workflow:
+    description: Minimal workflow
+    entry_points:
+      - svc-a
+
+output:
+  wiki_path: ./wiki-output
