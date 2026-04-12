@@ -6,6 +6,7 @@ import {
   rmSync,
   readFileSync,
   existsSync,
+  writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -169,6 +170,34 @@ describe('generateWiki', () => {
     // credit-gateway exposes credit.check.requests, consumes credit.check.responses
     expect(content).toContain('credit.check.requests');
     expect(content).toContain('credit.check.responses');
+  });
+
+  it('creates runbook.md scaffold with placeholder sections', () => {
+    generateWiki(testGraph, tmpDir);
+    const runbookPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'runbook.md'
+    );
+    expect(existsSync(runbookPath)).toBe(true);
+    const content = readFileSync(runbookPath, 'utf-8');
+    expect(content).toContain('# credit-gateway — Runbook');
+    expect(content).toContain('generated_by: code-wiki');
+    expect(content).toContain('## On-call');
+    expect(content).toContain('## Dashboards');
+    expect(content).toContain('## Common incidents');
+    expect(content.toLowerCase()).toContain('fill in');
+  });
+
+  it('does not overwrite an existing runbook.md', () => {
+    generateWiki(testGraph, tmpDir);
+    const runbookPath = path.join(
+      tmpDir, 'services', 'credit-gateway', 'runbook.md'
+    );
+    const customContent = '# my custom runbook\n\nownership: team-foo\n';
+    writeFileSync(runbookPath, customContent, 'utf-8');
+
+    generateWiki(testGraph, tmpDir);
+
+    expect(readFileSync(runbookPath, 'utf-8')).toBe(customContent);
   });
 
   it('includes frontmatter in generated pages', () => {

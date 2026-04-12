@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Graph } from '../graph/types.js';
 import {
@@ -8,6 +8,7 @@ import {
   serviceDependencies,
   serviceApi,
   serviceGlossary,
+  serviceRunbook,
 } from './templates.js';
 
 export function generateWiki(
@@ -55,5 +56,10 @@ export function generateWiki(
       serviceGlossary(service),
       'utf-8'
     );
+
+    const runbookPath = path.join(serviceDir, 'runbook.md');
+    if (!existsSync(runbookPath)) {
+      writeFileSync(runbookPath, serviceRunbook(service), 'utf-8');
+    }
   }
 }

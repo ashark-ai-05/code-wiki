@@ -237,6 +237,36 @@ export function serviceGlossary(service: ServiceNode): string {
   return md;
 }
 
+export function serviceRunbook(service: ServiceNode): string {
+  const fm = frontmatter({
+    generated_by: 'code-wiki',
+    generated_at: new Date().toISOString(),
+    source_repos: [service.id],
+    note: 'scaffold — humans own the content of this file',
+  });
+
+  let md = `${fm}# ${service.id} — Runbook\n\n`;
+  md +=
+    '> **Scaffold only.** Fill in the sections below with ops knowledge. code-wiki will not overwrite this file once it exists.\n\n';
+
+  md += '## On-call\n\n';
+  md += '- _Fill in: who owns this service, escalation path, Slack channel._\n\n';
+
+  md += '## Dashboards\n\n';
+  md += '- _Fill in: links to relevant Grafana / Datadog / Kibana dashboards._\n\n';
+
+  md += '## Common incidents\n\n';
+  md += '- _Fill in: known failure modes, symptoms, mitigations._\n\n';
+
+  md += '## Deployment\n\n';
+  md += '- _Fill in: how to deploy, roll back, and verify._\n\n';
+
+  md += '## Dependencies to watch\n\n';
+  md += '- _Fill in: upstream services, infrastructure, third parties._\n';
+
+  return md;
+}
+
 export function wikiIndex(
   services: ServiceNode[],
   edges: Edge[]
