@@ -1,0 +1,15 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka-broker:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: credit-processor
+    template:
+      default-topic: credit.check.requests
+
+app:
+  kafka:
+    topics:
+      outbound: credit.check.responses
+      dlq: credit.check.dlq

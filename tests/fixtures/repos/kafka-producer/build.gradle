@@ -1,0 +1,13 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.4'
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'io.confluent:kafka-avro-serializer:7.5.0'
+}
