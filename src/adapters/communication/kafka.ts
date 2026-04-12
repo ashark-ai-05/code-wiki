@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { glob } from 'fast-glob';
+import glob from 'fast-glob';
 import { parse as parseYaml } from 'yaml';
 import path from 'node:path';
 import type { CodeWikiAdapter, CommunicationDetection } from '../types.js';

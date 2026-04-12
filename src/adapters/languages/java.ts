@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { glob } from 'fast-glob';
+import glob from 'fast-glob';
 import type { CodeWikiAdapter, LanguageDetection } from '../types.js';
 
 export class JavaAdapter implements CodeWikiAdapter {
