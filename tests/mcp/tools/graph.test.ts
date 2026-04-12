@@ -3,6 +3,9 @@ import {
   listServicesTool,
   getServiceTool,
   findByTechTool,
+  traceDownstreamTool,
+  traceUpstreamTool,
+  getEdgesTool,
 } from '../../../src/mcp/tools/graph.js';
 import { GraphReader } from '../../../src/mcp/graph-reader.js';
 import {
@@ -56,7 +59,28 @@ function writeSampleGraph(graphDir: string): void {
   );
   writeFileSync(
     path.join(graphDir, 'edges.json'),
-    JSON.stringify({ schema_version: '2.0', edges: [] })
+    JSON.stringify({
+      schema_version: '2.0',
+      edges: [
+        {
+          id: 'e001',
+          from: 'svc-a',
+          to: 'svc-b',
+          type: 'kafka',
+          bidirectional: false,
+          details: { topic: 'orders.new' },
+          evidence: {
+            from_file: 'app.yaml',
+            from_line: 1,
+            to_file: 'main.go',
+            to_line: 42,
+          },
+          confidence: 'static',
+          discovered_at: '2026-04-12T10:00:00Z',
+          workflows: [],
+        },
+      ],
+    })
   );
   writeFileSync(
     path.join(graphDir, 'tech-matrix.json'),
@@ -147,5 +171,61 @@ describe('graph tools', () => {
     );
     const data = res.data as { services: string[] };
     expect(data.services).toEqual([]);
+  });
+
+  it('trace_downstream follows outgoing edges one level', async () => {
+    const res = await traceDownstreamTool.handler(
+      { service_id: 'svc-a', depth: 1 },
+      { reader, cwd: tmp }
+    );
+    const data = res.data as {
+      from: string;
+      reached: string[];
+    };
+    expect(data.from).toBe('svc-a');
+    expect(data.reached).toEqual(['svc-b']);
+  });
+
+  it('trace_upstream follows incoming edges', async () => {
+    const res = await traceUpstreamTool.handler(
+      { service_id: 'svc-b' },
+      { reader, cwd: tmp }
+    );
+    const data = res.data as { reached: string[] };
+    expect(data.reached).toEqual(['svc-a']);
+  });
+
+  it('get_edges returns all edges when no filter', async () => {
+    const res = await getEdgesTool.handler({}, { reader, cwd: tmp });
+    const data = res.data as { edges: Array<{ id: string }> };
+    expect(data.edges).toHaveLength(1);
+    expect(data.edges[0].id).toBe('e001');
+  });
+
+  it('get_edges filters by type', async () => {
+    const res = await getEdgesTool.handler(
+      { type: 'kafka' },
+      { reader, cwd: tmp }
+    );
+    const data = res.data as { edges: unknown[] };
+    expect(data.edges).toHaveLength(1);
+  });
+
+  it('get_edges returns empty when type does not match', async () => {
+    const res = await getEdgesTool.handler(
+      { type: 'rest' },
+      { reader, cwd: tmp }
+    );
+    const data = res.data as { edges: unknown[] };
+    expect(data.edges).toHaveLength(0);
+  });
+
+  it('trace_downstream supports edge_types filter', async () => {
+    const res = await traceDownstreamTool.handler(
+      { service_id: 'svc-a', edge_types: ['rest'] },
+      { reader, cwd: tmp }
+    );
+    const data = res.data as { reached: string[] };
+    expect(data.reached).toEqual([]);
   });
 });
