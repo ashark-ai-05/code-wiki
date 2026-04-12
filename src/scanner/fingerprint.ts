@@ -1,10 +1,8 @@
 import path from 'node:path';
 import type { AdapterRegistry } from '../adapters/registry.js';
-import type {
-  LanguageDetection,
-  CommunicationDetection,
-} from '../adapters/types.js';
-import type { RepoFingerprint } from './types.js';
+import type { LanguageDetection } from '../adapters/types.js';
+import type { Exposure, RepoFingerprint } from '../fingerprint/types.js';
+import { SCHEMA_VERSION } from '../fingerprint/schema.js';
 import { discoverRepos } from './repo-walker.js';
 
 export async function fingerprintRepo(
@@ -13,40 +11,39 @@ export async function fingerprintRepo(
 ): Promise<RepoFingerprint> {
   const repoName = path.basename(repoPath);
   const languages: RepoFingerprint['tech_stack']['languages'] = [];
-  const communication: RepoFingerprint['communication'] = [];
+  const exposures: Exposure[] = [];
 
   for (const adapter of registry.getByType('language')) {
     const result = await adapter.detect(repoPath);
     if (result.detected) {
-      const langResult = result as LanguageDetection;
+      const lang = result as LanguageDetection;
       languages.push({
-        language: langResult.details.language,
-        version: langResult.details.version,
-        build_tool: langResult.details.build_tool,
-        dependencies: langResult.details.dependencies,
+        language: lang.details.language,
+        version: lang.details.version,
+        build_tool: lang.details.build_tool,
+        dependencies: lang.details.dependencies,
       });
     }
   }
 
   for (const adapter of registry.getByType('communication')) {
-    const result = await adapter.detect(repoPath);
-    if (result.detected) {
-      const commResult = result as CommunicationDetection;
-      communication.push({
-        type: commResult.details.type,
-        role: commResult.details.role,
-        identifiers: commResult.details.identifiers,
-        config_files: commResult.details.config_files,
-      });
+    if (typeof adapter.findExposures === 'function') {
+      const found = await adapter.findExposures(repoPath);
+      exposures.push(...found);
     }
   }
 
   return {
-    repo_path: repoPath,
-    repo_name: repoName,
-    tech_stack: { languages },
-    communication,
+    schema_version: SCHEMA_VERSION,
+    repo: { name: repoName, path: repoPath },
     scanned_at: new Date().toISOString(),
+    tech_stack: { languages },
+    exposes: exposures.filter((e) =>
+      ['producer', 'server', 'both'].includes(e.role)
+    ),
+    consumes: exposures.filter((e) =>
+      ['consumer', 'client', 'both'].includes(e.role)
+    ),
   };
 }
 
@@ -61,6 +58,5 @@ export async function fingerprint(
     const result = await fingerprintRepo(repoPath, registry);
     results.push(result);
   }
-
   return results;
 }
