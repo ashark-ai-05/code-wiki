@@ -46,15 +46,21 @@ program
         const langs = fp.tech_stack.languages
           .map((l) => l.language)
           .join(', ');
-        const comms = fp.communication
-          .map((c) => c.type)
-          .join(', ');
-        console.log(`  ${fp.repo_name}`);
+        const exposeTypes = [
+          ...new Set(fp.exposes.map((e) => e.type)),
+        ].join(', ');
+        const consumeTypes = [
+          ...new Set(fp.consumes.map((e) => e.type)),
+        ].join(', ');
+        console.log(`  ${fp.repo.name}`);
         console.log(
           `    Languages: ${langs || 'none detected'}`
         );
         console.log(
-          `    Communication: ${comms || 'none detected'}`
+          `    Exposes:   ${exposeTypes || 'none'} (${fp.exposes.length} entries)`
+        );
+        console.log(
+          `    Consumes:  ${consumeTypes || 'none'} (${fp.consumes.length} entries)`
         );
       }
 
