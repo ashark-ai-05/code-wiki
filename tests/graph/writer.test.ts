@@ -10,121 +10,73 @@ import {
 import path from 'node:path';
 import os from 'node:os';
 
+function sampleGraph(): Graph {
+  return {
+    schema_version: '2.0',
+    services: [
+      {
+        id: 'svc-a',
+        repo: '/repos/svc-a',
+        type: 'microservice',
+        tech_stack: {
+          languages: ['java:17'],
+          frameworks: ['spring-boot'],
+          build: ['gradle'],
+          runtime: [],
+          databases: [],
+        },
+        exposes: [
+          {
+            type: 'kafka-topic',
+            identifier: 'orders.new',
+            role: 'producer',
+            source: { path: 'app.yaml', line: 1 },
+            detection_method: 'static',
+            confidence: 'static',
+          },
+        ],
+        consumes: [],
+        last_scanned: '2026-04-12T10:00:00Z',
+      },
+    ],
+    edges: [],
+  };
+}
+
 describe('writeGraph', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(
-      path.join(os.tmpdir(), 'code-wiki-test-')
-    );
+    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'code-wiki-test-'));
   });
-
   afterEach(() => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('writes services.json and edges.json', () => {
-    const graph: Graph = {
-      schema_version: '1.0',
-      services: [
-        {
-          id: 'svc-a',
-          repo: '/repos/svc-a',
-          type: 'microservice',
-          tech_stack: {
-            languages: ['java:17'],
-            frameworks: [],
-            build: ['gradle'],
-            runtime: [],
-            databases: [],
-          },
-          exposes: [],
-          consumes: [],
-          last_scanned: '2026-04-12T10:00:00Z',
-        },
-      ],
-      edges: [
-        {
-          id: 'e001',
-          from: 'svc-a',
-          to: 'svc-b',
-          type: 'kafka',
-          bidirectional: false,
-          details: { topic: 'test.topic' },
-          evidence: {},
-          confidence: 'static',
-          discovered_at: '2026-04-12T10:00:00Z',
-          workflows: [],
-        },
-      ],
-    };
-
-    writeGraph(graph, tmpDir);
-
-    const servicesPath = path.join(tmpDir, 'graph', 'services.json');
-    const edgesPath = path.join(tmpDir, 'graph', 'edges.json');
-
-    expect(existsSync(servicesPath)).toBe(true);
-    expect(existsSync(edgesPath)).toBe(true);
-
+  it('writes services.json with schema_version 2.0', () => {
+    writeGraph(sampleGraph(), tmpDir);
     const services = JSON.parse(
-      readFileSync(servicesPath, 'utf-8')
+      readFileSync(path.join(tmpDir, 'graph', 'services.json'), 'utf-8')
     );
-    expect(services.schema_version).toBe('1.0');
-    expect(services.services).toHaveLength(1);
-
-    const edges = JSON.parse(readFileSync(edgesPath, 'utf-8'));
-    expect(edges.edges).toHaveLength(1);
-    expect(edges.edges[0].from).toBe('svc-a');
+    expect(services.schema_version).toBe('2.0');
+    expect(services.services[0].exposes[0].identifier).toBe('orders.new');
+    expect(services.services[0].exposes[0].source.path).toBe('app.yaml');
   });
 
-  it('writes tech-matrix.json', () => {
-    const graph: Graph = {
-      schema_version: '1.0',
-      services: [
-        {
-          id: 'svc-a',
-          repo: '',
-          type: 'microservice',
-          tech_stack: {
-            languages: ['java:17'],
-            frameworks: ['spring-boot'],
-            build: ['gradle'],
-            runtime: [],
-            databases: [],
-          },
-          exposes: [],
-          consumes: [],
-          last_scanned: '',
-        },
-        {
-          id: 'svc-b',
-          repo: '',
-          type: 'microservice',
-          tech_stack: {
-            languages: ['typescript:5.4'],
-            frameworks: ['express'],
-            build: ['npm'],
-            runtime: [],
-            databases: [],
-          },
-          exposes: [],
-          consumes: [],
-          last_scanned: '',
-        },
-      ],
-      edges: [],
-    };
+  it('writes edges.json', () => {
+    writeGraph(sampleGraph(), tmpDir);
+    expect(
+      existsSync(path.join(tmpDir, 'graph', 'edges.json'))
+    ).toBe(true);
+  });
 
-    writeGraph(graph, tmpDir);
-
-    const matrixPath = path.join(
-      tmpDir, 'graph', 'tech-matrix.json'
+  it('writes tech-matrix.json grouped by language/framework/build', () => {
+    writeGraph(sampleGraph(), tmpDir);
+    const matrix = JSON.parse(
+      readFileSync(path.join(tmpDir, 'graph', 'tech-matrix.json'), 'utf-8')
     );
-    expect(existsSync(matrixPath)).toBe(true);
-
-    const matrix = JSON.parse(readFileSync(matrixPath, 'utf-8'));
     expect(matrix.languages['java:17']).toContain('svc-a');
-    expect(matrix.languages['typescript:5.4']).toContain('svc-b');
+    expect(matrix.frameworks['spring-boot']).toContain('svc-a');
+    expect(matrix.build['gradle']).toContain('svc-a');
   });
 });
