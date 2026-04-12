@@ -1,0 +1,19 @@
+{
+  "name": "pricing-engine",
+  "version": "2.1.0",
+  "dependencies": {
+    "express": "^4.18.2",
+    "kafkajs": "^2.2.4",
+    "ioredis": "^5.3.2",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^22.0.0",
+    "@types/express": "^4.17.21",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
