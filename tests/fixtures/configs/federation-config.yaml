@@ -1,0 +1,18 @@
+version: "1.0"
+sources:
+  - provider: local
+    paths: ["./repos"]
+output:
+  wiki_path: ./wiki-output
+workflows:
+  order-placement:
+    description: "Order placement flow"
+    entry_points: ["svc-a"]
+federation:
+  enabled: true
+  provider: git
+  url: git@bitbucket.org:org/code-wiki-org.git
+  branch: main
+  publish_strategy: branch
+  auth:
+    method: ssh

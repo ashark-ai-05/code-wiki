@@ -48,4 +48,19 @@ describe('loadConfig', () => {
     expect(config.analysis?.detection?.kafka).toBe(true);
     expect(config.analysis?.detection?.rest_api).toBe(true);
   });
+
+  it('parses federation section when present', () => {
+    const config = loadConfig(resolve(fixturesDir, 'federation-config.yaml'));
+    expect(config.federation).toBeDefined();
+    expect(config.federation!.enabled).toBe(true);
+    expect(config.federation!.provider).toBe('git');
+    expect(config.federation!.url).toContain('code-wiki-org');
+    expect(config.federation!.publish_strategy).toBe('branch');
+    expect(config.federation!.auth.method).toBe('ssh');
+  });
+
+  it('leaves federation undefined when section is absent', () => {
+    const config = loadConfig(resolve(fixturesDir, 'valid-config.yaml'));
+    expect(config.federation).toBeUndefined();
+  });
 });

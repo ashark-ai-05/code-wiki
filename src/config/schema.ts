@@ -72,6 +72,21 @@ export interface LlmConfig {
   cost_controls?: LlmCostControlsConfig;
 }
 
+export interface FederationAuth {
+  method: 'ssh' | 'token';
+  env_var?: string;
+  key_path?: string;
+}
+
+export interface FederationConfig {
+  enabled: boolean;
+  provider: 'git';
+  url: string;
+  branch: string;
+  publish_strategy: 'branch' | 'direct';
+  auth: FederationAuth;
+}
+
 export interface CodeWikiConfig {
   version: string;
   sources: SourceConfig[];
@@ -82,4 +97,5 @@ export interface CodeWikiConfig {
   output: OutputConfig;
   analysis?: AnalysisConfig;
   adapters?: Record<string, unknown>;
+  federation?: FederationConfig;
 }
