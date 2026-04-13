@@ -1,13 +1,10 @@
 import type { McpTool } from './index.js';
 import { buildResponse } from '../response.js';
 
-const FEDERATION_NOTE =
-  'Workflow data is populated by the federation merge job (slice 2d). In single-repo mode, no workflows are available yet.';
-
 export const listWorkflowsTool: McpTool = {
   name: 'list_workflows',
   description:
-    'List named workflows across the graph. In single-repo mode without federation, this returns an empty list with a note.',
+    'List named workflows across the graph. Each workflow has entry points, member services, and the edges that form it.',
   inputSchema: {
     type: 'object',
     properties: {},
@@ -15,7 +12,14 @@ export const listWorkflowsTool: McpTool = {
   },
   handler: async (_args, { reader }) =>
     buildResponse(reader, {
-      data: { workflows: [], note: FEDERATION_NOTE },
+      data: {
+        workflows: reader.workflows().map((w) => ({
+          name: w.name,
+          entry_points: w.entry_points,
+          service_count: w.services.length,
+          edge_count: w.edges.length,
+        })),
+      },
       confidence: 'static',
     }),
 };
@@ -23,19 +27,25 @@ export const listWorkflowsTool: McpTool = {
 export const getWorkflowTool: McpTool = {
   name: 'get_workflow',
   description:
-    'Get the service list + edges that make up a named workflow. Returns null + a note in single-repo mode.',
+    'Get the full service list + edge ids for a named workflow.',
   inputSchema: {
     type: 'object',
-    properties: {
-      name: { type: 'string' },
-    },
+    properties: { name: { type: 'string' } },
     required: ['name'],
     additionalProperties: false,
   },
-  handler: async (_args, { reader }) =>
-    buildResponse(reader, {
-      data: { workflow: null, not_found: true, note: FEDERATION_NOTE },
+  handler: async (args, { reader }) => {
+    const name = args.name as string;
+    const workflow = reader.workflows().find((w) => w.name === name);
+    if (!workflow) {
+      return buildResponse(reader, {
+        data: { workflow: null, not_found: true },
+        confidence: 'static',
+      });
+    }
+    return buildResponse(reader, {
+      data: { workflow },
       confidence: 'static',
-    }),
+    });
+  },
 };
-

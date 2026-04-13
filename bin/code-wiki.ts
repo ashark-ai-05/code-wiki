@@ -2,11 +2,15 @@
 import { Command } from 'commander';
 import { AdapterRegistry } from '../src/adapters/registry.js';
 import { fingerprint } from '../src/scanner/fingerprint.js';
+import { fingerprintRepo } from '../src/scanner/fingerprint.js';
 import { buildGraph } from '../src/graph/builder.js';
 import { writeGraph } from '../src/graph/writer.js';
 import { generateWiki } from '../src/wiki/generator.js';
 import { loadConfig } from '../src/config/loader.js';
 import { runMcpServer } from '../src/mcp/server.js';
+import { publishFingerprint } from '../src/federation/publish.js';
+import { pullFederation } from '../src/federation/pull.js';
+import { mergeFederation } from '../src/federation/merge.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -138,6 +142,57 @@ program
       console.error('[code-wiki mcp]', (err as Error).message);
       process.exit(1);
     }
+  });
+
+program
+  .command('publish')
+  .description('Publish this repo\'s fingerprint to the federation repo')
+  .option('-p, --path <path>', 'Path to the repo to scan', process.cwd())
+  .option('-c, --config <config>', 'Path to code-wiki.yaml', 'code-wiki.yaml')
+  .action(async (options: { path: string; config: string }) => {
+    const config = loadConfig(options.config);
+    if (!config.federation?.enabled) {
+      console.error('federation is not enabled in code-wiki.yaml');
+      process.exit(1);
+    }
+    const registry = AdapterRegistry.withBuiltins();
+    const fp = await fingerprintRepo(path.resolve(options.path), registry);
+    const result = await publishFingerprint({
+      fingerprint: fp,
+      config: config.federation,
+      commitSha: fp.repo.sha,
+    });
+    console.log(
+      `published ${result.fingerprint_file} → branch ${result.branch} (pushed=${result.pushed})`
+    );
+  });
+
+program
+  .command('pull')
+  .description('Clone or update the federation repo under ~/.code-wiki/org/')
+  .option('-c, --config <config>', 'Path to code-wiki.yaml', 'code-wiki.yaml')
+  .action(async (options: { config: string }) => {
+    const config = loadConfig(options.config);
+    if (!config.federation?.enabled) {
+      console.error('federation is not enabled in code-wiki.yaml');
+      process.exit(1);
+    }
+    const result = await pullFederation({ config: config.federation });
+    console.log(`federation repo at: ${result.localDir}`);
+  });
+
+program
+  .command('merge')
+  .description('Rebuild the org graph from all fingerprints (runs inside the federation repo)')
+  .option('-d, --dir <dir>', 'Federation repo root', process.cwd())
+  .action(async (options: { dir: string }) => {
+    const root = path.resolve(options.dir);
+    const fingerprintsDir = path.join(root, 'fingerprints');
+    const graphDir = path.join(root, 'graph');
+    const result = mergeFederation({ fingerprintsDir, graphDir });
+    console.log(
+      `merge: ${result.merged.length} fingerprints merged, ${result.skipped.length} skipped, changed=${result.changed}`
+    );
   });
 
 function resolveRepoDir(options: {

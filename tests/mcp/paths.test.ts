@@ -80,4 +80,18 @@ describe('discoverGraphPath', () => {
     });
     expect(result).toBe(explicit);
   });
+
+  it('falls back to ~/.code-wiki/org/graph/ when present and the other paths are not', () => {
+    const homeLike = path.join(tmp, 'fake-home');
+    const orgGraph = path.join(homeLike, '.code-wiki', 'org', 'graph');
+    mkdirSync(orgGraph, { recursive: true });
+    writeFileSync(path.join(orgGraph, 'services.json'), '{}');
+
+    const result = discoverGraphPath({
+      cwd: tmp,
+      env: {},
+      homeDir: homeLike,
+    });
+    expect(result).toBe(orgGraph);
+  });
 });

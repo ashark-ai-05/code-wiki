@@ -14,6 +14,13 @@ export interface SourcesMeta {
   graph_freshness_seconds: number;
 }
 
+export interface WorkflowEntry {
+  name: string;
+  entry_points: string[];
+  services: string[];
+  edges: string[];
+}
+
 export class GraphReader {
   private _services: ServiceNode[] = [];
   private _edges: Edge[] = [];
@@ -22,6 +29,7 @@ export class GraphReader {
     frameworks: {},
     build: {},
   };
+  private _workflows: WorkflowEntry[] = [];
   private _loadedAt = new Date();
   private _servicesJsonMtime = 0;
 
@@ -61,6 +69,16 @@ export class GraphReader {
       this._matrix = { languages: {}, frameworks: {}, build: {} };
     }
 
+    const workflowsPath = path.join(this.graphDir, 'workflows.json');
+    if (existsSync(workflowsPath)) {
+      const raw = JSON.parse(
+        readFileSync(workflowsPath, 'utf-8')
+      ) as { workflows?: WorkflowEntry[] };
+      this._workflows = raw.workflows ?? [];
+    } else {
+      this._workflows = [];
+    }
+
     this._loadedAt = new Date();
   }
 
@@ -74,6 +92,10 @@ export class GraphReader {
 
   techMatrix(): TechMatrix {
     return this._matrix;
+  }
+
+  workflows(): WorkflowEntry[] {
+    return this._workflows;
   }
 
   getServiceById(id: string): ServiceNode | undefined {
